@@ -36,8 +36,8 @@ export function AuthProvider({ children }) {
     await loadUser();
   };
 
-  const register = async (username, email, password) => {
-    await api.post("/auth/register/", { username, email, password });
+  const register = async ({ username, email, password, student_id, department }) => {
+    await api.post("/auth/register/", { username, email, password, student_id, department });
     // After registering, log them straight in
     await login(username, password);
   };
