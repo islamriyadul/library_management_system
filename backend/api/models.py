@@ -83,3 +83,39 @@ class Loan(models.Model):
 
     def __str__(self):
         return f"{self.book.title} -> {self.user.username}"
+
+
+class VerificationRequest(models.Model):
+    """
+    A student's walk-in check-in at the circulation desk, logged by a
+    librarian (e.g. "Textbook Issue", "Return Deposit"). Librarian then
+    clears (approves) or rejects it. The "clearance" state shown in the
+    UI (Clear / Overdue Fine) is NOT stored here — it's computed live from
+    the student's current loans, so it's always accurate.
+    """
+
+    PENDING = "pending"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+    STATUS_CHOICES = [
+        (PENDING, "Pending"),
+        (APPROVED, "Approved"),
+        (REJECTED, "Rejected"),
+    ]
+
+    student = models.ForeignKey(User, on_delete=models.CASCADE, related_name="verification_requests")
+    purpose = models.CharField(max_length=100)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default=PENDING)
+    created_at = models.DateTimeField(auto_now_add=True)
+    resolved_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True, related_name="resolved_verifications"
+    )
+    resolved_at = models.DateTimeField(null=True, blank=True)
+
+    def is_student_overdue(self):
+        return Loan.objects.filter(
+            user=self.student, is_returned=False, due_date__lt=timezone.now()
+        ).exists()
+
+    def __str__(self):
+        return f"{self.student.username} - {self.purpose} ({self.status})"

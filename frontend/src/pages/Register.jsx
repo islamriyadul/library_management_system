@@ -16,7 +16,7 @@ export default function Register() {
     setError("");
     setSubmitting(true);
     try {
-      await register(username, email, password);
+      await register({ username, email, password });
       navigate("/");
     } catch (err) {
       const detail =

@@ -6,7 +6,9 @@ export default function ProtectedRoute({ children, librarianOnly = false }) {
 
   if (loading) return <p className="page">Loading...</p>;
   if (!user) return <Navigate to="/login" replace />;
-  if (librarianOnly && !user.is_librarian) return <Navigate to="/" replace />;
+  if (librarianOnly && !(user.role === "librarian" || user.role === "admin")) {
+    return <Navigate to="/" replace />;
+  }
 
   return children;
 }

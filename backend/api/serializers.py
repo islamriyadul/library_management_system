@@ -1,6 +1,6 @@
 from django.contrib.auth.models import User
 from rest_framework import serializers
-from .models import Book, Loan, Profile
+from .models import Book, Loan, Profile, VerificationRequest
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -109,3 +109,21 @@ class CreateStaffSerializer(serializers.ModelSerializer):
         # Once created, represent the account the same way StaffSerializer does
         # (reads role/is_active_account correctly from the Profile)
         return StaffSerializer(instance, context=self.context).data
+
+
+# ---------- Circulation desk verification queue (Librarian/Admin) ----------
+
+class VerificationRequestSerializer(serializers.ModelSerializer):
+    student_username = serializers.CharField(source="student.username", read_only=True)
+    clearance = serializers.SerializerMethodField()
+
+    class Meta:
+        model = VerificationRequest
+        fields = [
+            "id", "student_username", "purpose", "status",
+            "created_at", "resolved_at", "clearance",
+        ]
+        read_only_fields = ["status", "created_at", "resolved_at"]
+
+    def get_clearance(self, obj):
+        return "overdue" if obj.is_student_overdue() else "clear"

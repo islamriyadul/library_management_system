@@ -8,10 +8,10 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Book, Loan, Profile, LOAN_PERIOD_DAYS
+from .models import Book, Loan, Profile, VerificationRequest, LOAN_PERIOD_DAYS
 from .serializers import (
     BookSerializer, LoanSerializer, RegisterSerializer, UserSerializer,
-    StaffSerializer, CreateStaffSerializer,
+    StaffSerializer, CreateStaffSerializer, VerificationRequestSerializer,
 )
 from .permissions import IsLibrarianOrAdmin, IsLibrarianOrAdminOnly, IsAdminOnly, get_role
 
@@ -101,7 +101,7 @@ def issue_book(request):
         )
 
     try:
-        student = User.objects.get(username=username)
+        student = User.objects.get(username__iexact=username)
     except User.DoesNotExist:
         return Response({"detail": "No such user."}, status=status.HTTP_404_NOT_FOUND)
 
@@ -191,3 +191,68 @@ def toggle_staff_active(request, user_id):
     profile.save()
 
     return Response(StaffSerializer(target).data)
+
+
+# ---------- Circulation desk verification queue (Librarian/Admin) ----------
+
+class VerificationQueueView(generics.ListAPIView):
+    """Pending walk-in check-ins waiting to be cleared at the desk."""
+    permission_classes = [IsLibrarianOrAdminOnly]
+    serializer_class = VerificationRequestSerializer
+
+    def get_queryset(self):
+        return VerificationRequest.objects.filter(
+            status=VerificationRequest.PENDING
+        ).order_by("-created_at")
+
+
+@api_view(["POST"])
+@permission_classes([IsLibrarianOrAdminOnly])
+def create_verification_request(request):
+    """Librarian logs a student's walk-in at the desk."""
+    username = request.data.get("username")
+    purpose = request.data.get("purpose")
+
+    if not username or not purpose:
+        return Response(
+            {"detail": "username and purpose are required."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    try:
+        student = User.objects.get(username__iexact=username)
+    except User.DoesNotExist:
+        return Response({"detail": "No such user."}, status=status.HTTP_404_NOT_FOUND)
+
+    vr = VerificationRequest.objects.create(student=student, purpose=purpose)
+    return Response(VerificationRequestSerializer(vr).data, status=status.HTTP_201_CREATED)
+
+
+@api_view(["POST"])
+@permission_classes([IsLibrarianOrAdminOnly])
+def resolve_verification_request(request, request_id):
+    """Librarian clicks the checkmark (approve) or cross (reject)."""
+    action = request.data.get("action")
+    if action not in ("approve", "reject"):
+        return Response(
+            {"detail": "action must be 'approve' or 'reject'."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    try:
+        vr = VerificationRequest.objects.get(id=request_id)
+    except VerificationRequest.DoesNotExist:
+        return Response({"detail": "No such request."}, status=status.HTTP_404_NOT_FOUND)
+
+    if vr.status != VerificationRequest.PENDING:
+        return Response(
+            {"detail": "This request was already resolved."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    vr.status = VerificationRequest.APPROVED if action == "approve" else VerificationRequest.REJECTED
+    vr.resolved_by = request.user
+    vr.resolved_at = timezone.now()
+    vr.save()
+
+    return Response(VerificationRequestSerializer(vr).data)

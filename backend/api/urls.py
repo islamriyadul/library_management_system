@@ -6,6 +6,7 @@ from .views import (
     BookViewSet, RegisterView, MeView,
     MyLoansView, AllLoansView, issue_book, return_book,
     StaffListCreateView, toggle_staff_active,
+    VerificationQueueView, create_verification_request, resolve_verification_request,
 )
 
 router = DefaultRouter()
@@ -27,6 +28,11 @@ urlpatterns = [
     # Staff management (Admin only)
     path("staff/", StaffListCreateView.as_view(), name="staff-list-create"),
     path("staff/<int:user_id>/toggle-active/", toggle_staff_active, name="staff-toggle-active"),
+
+    # Circulation desk verification queue (Librarian/Admin only)
+    path("verification/", VerificationQueueView.as_view(), name="verification-queue"),
+    path("verification/create/", create_verification_request, name="verification-create"),
+    path("verification/<int:request_id>/resolve/", resolve_verification_request, name="verification-resolve"),
 ]
 
 urlpatterns += router.urls
