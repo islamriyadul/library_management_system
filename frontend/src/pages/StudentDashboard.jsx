@@ -1,5 +1,8 @@
+import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../api/AuthContext";
+import api from "../api/client";
+import { formatDate } from "../utils/formatDate";
 
 // ---- Inline icon components (no external icon package) ----
 const IconMenu = (props) => (
@@ -83,48 +86,7 @@ const NAV_ITEMS = [
   { key: "profile", label: "Profile", icon: IconUser, path: "/profile" },
 ];
 
-const MOCK_LOANS = [
-  {
-    id: 1,
-    title: "Introduction to Algorithms (3rd Ed.)",
-    author: "Thomas H. Cormen, Charles E. Leiserson",
-    isbn: "978-0262033848",
-    callNumber: "QA76.6 .C662 2009",
-    dateIssued: "Nov 10, 2024",
-    dueDate: "Nov 24, 2024",
-    overdue: false,
-  },
-  {
-    id: 2,
-    title: "Artificial Intelligence: A Modern Approach",
-    author: "Stuart Russell, Peter Norvig",
-    isbn: "978-0136042594",
-    callNumber: "Q335 .R87 2010",
-    dateIssued: "Nov 12, 2024",
-    dueDate: "Nov 26, 2024",
-    overdue: false,
-  },
-  {
-    id: 3,
-    title: "Database System Concepts (7th Ed.)",
-    author: "Abraham Silberschatz, Henry F. Korth",
-    isbn: "978-0078022159",
-    callNumber: "QA76.9.D3 S56",
-    dateIssued: "Oct 28, 2024",
-    dueDate: "Nov 11, 2024",
-    overdue: true,
-  },
-  {
-    id: 4,
-    title: "Computer Networking: A Top-Down Approach",
-    author: "James F. Kurose, Keith Ross",
-    isbn: "978-0134008141",
-    callNumber: "TK5105.5 .K87 2017",
-    dateIssued: "Nov 14, 2024",
-    dueDate: "Nov 28, 2024",
-    overdue: false,
-  },
-];
+
 
 function SidebarLink({ item, active }) {
   const Icon = item.icon;
@@ -178,68 +140,53 @@ export default function StudentDashboard() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
 
+  const [loans, setLoans] = useState(null); // null = loading
+  const [books, setBooks] = useState({}); // id -> book, for author/subject lookup
+
+  useEffect(() => {
+    api.get("/loans/mine/").then((res) => setLoans(res.data)).catch(() => setLoans([]));
+    api.get("/books/").then((res) => {
+      const map = {};
+      res.data.forEach((b) => { map[b.id] = b; });
+      setBooks(map);
+    }).catch(() => setBooks({}));
+  }, []);
+
   const handleLogout = () => {
     logout();
     navigate("/login");
   };
 
+  const activeLoans = loans ? loans.filter((l) => !l.is_returned) : [];
+  const overdueActive = activeLoans.filter((l) => new Date(l.due_date) < new Date());
+  // current_fine is the live owed amount — correct for both an active
+  // overdue loan (grows daily) and a returned one (locked in). fine_amount
+  // alone would understate this, since it stays 0 until a book is returned.
+  const totalFines = loans
+    ? loans.reduce((sum, l) => sum + Number(l.current_fine || 0), 0)
+    : 0;
+
+  // Nearest upcoming due date among active loans (for the "Days Till Next
+  // Due Date" card)
+  const nextDue = activeLoans.length
+    ? activeLoans.reduce((soonest, l) =>
+        new Date(l.due_date) < new Date(soonest.due_date) ? l : soonest
+      )
+    : null;
+  const daysLeft = nextDue
+    ? Math.ceil((new Date(nextDue.due_date) - new Date()) / (1000 * 60 * 60 * 24))
+    : null;
+
+  const handleExtensionClick = () => {
+    alert("Renewals/extensions aren't a built feature yet — there's no backend endpoint for this.");
+  };
+
   return (
-    <div className="flex min-h-screen bg-[#F8F9FA]">
-      {/* Sidebar */}
-      <aside className="flex w-64 shrink-0 flex-col justify-between border-r border-gray-100 bg-white px-4 py-6">
-        <div>
-          <div className="mb-8 flex items-center gap-3 px-2">
-            <button className="text-gray-400 hover:text-gray-600 lg:hidden">
-              <IconMenu className="h-5 w-5" />
-            </button>
-            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-600 text-white">
-              <IconBook className="h-5 w-5" />
-            </span>
-            <div>
-              <p className="text-sm font-bold leading-tight text-gray-900">Central Library</p>
-              <p className="text-[11px] font-medium tracking-wide text-gray-400">STUDENT PORTAL</p>
-            </div>
-          </div>
-
-          <nav className="flex flex-col gap-1">
-            {NAV_ITEMS.map((item) => (
-              <SidebarLink
-                key={item.key}
-                item={item}
-                active={location.pathname === item.path}
-              />
-            ))}
-            <button
-              onClick={handleLogout}
-              className="mt-2 flex w-full items-center gap-3 rounded-md border-l-4 border-transparent px-3 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-50"
-            >
-              <IconLogout className="h-5 w-5 text-gray-400" />
-              Log Out
-            </button>
-          </nav>
-        </div>
-
-        <div className="flex items-center gap-3 rounded-lg border border-gray-100 px-3 py-3">
-          <div className="h-9 w-9 shrink-0 overflow-hidden rounded-full bg-gray-200">
-            {/* Replace with <img src={avatarUrl} /> once wired to real user data */}
-          </div>
-          <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-gray-900">
-              {user?.username || "..."}
-            </p>
-            <p className="truncate text-xs text-gray-400">
-              {user?.department || "Student"}
-            </p>
-          </div>
-        </div>
-      </aside>
-
-      {/* Main canvas */}
-      <main className="flex-1 px-8 py-8">
+    <>
         {/* Header */}
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Student Hub Dashboard</h1>
+            <h1 className="text-2xl font-bold text-gray-900">Students Journey</h1>
             <p className="mt-1 text-sm text-gray-500">
               Welcome back, {user?.username || "student"}. Monitor your outstanding loans and explore the catalog.
             </p>
@@ -265,24 +212,30 @@ export default function StudentDashboard() {
           <MetricCard
             title="My Checked-out Books"
             icon={IconBook}
-            value="2"
-            footnote="No overdue volumes currently"
+            value={loans === null ? "—" : activeLoans.length}
+            footnote={
+              loans === null
+                ? "Loading..."
+                : overdueActive.length > 0
+                ? `${overdueActive.length} overdue volume${overdueActive.length > 1 ? "s" : ""}`
+                : "No overdue volumes currently"
+            }
           />
           <MetricCard
             title="Days Till Next Due Date"
             icon={IconClock}
-            value="Nov 24"
-            badge="4 Days Left"
-            badgeTone="amber"
+            value={nextDue ? formatDate(nextDue.due_date) : "—"}
+            badge={nextDue ? (daysLeft >= 0 ? `${daysLeft} Days Left` : `${Math.abs(daysLeft)} Days Overdue`) : "No active loans"}
+            badgeTone={nextDue ? (daysLeft >= 0 ? "amber" : "red") : "green"}
             footnote="Renew before due date to avoid fines"
           />
           <MetricCard
             title="My Total Fine Balance"
             icon={IconBookmark}
-            value="0.00 BDT"
-            badge="No Pending Dues"
-            badgeTone="green"
-            footnote="All dues cleared"
+            value={`${totalFines.toFixed(2)} BDT`}
+            badge={totalFines > 0 ? "Payment Due" : "No Pending Dues"}
+            badgeTone={totalFines > 0 ? "amber" : "green"}
+            footnote={totalFines > 0 ? "Includes fines still accruing on overdue books" : "All dues cleared"}
           />
         </div>
 
@@ -294,54 +247,66 @@ export default function StudentDashboard() {
           </p>
 
           <div className="mt-5 overflow-x-auto">
-            <table className="w-full min-w-[720px] border-collapse text-left text-sm">
-              <thead>
-                <tr className="border-b border-gray-100 text-xs uppercase tracking-wide text-gray-400">
-                  <th className="pb-3 pr-4 font-medium">Book Title &amp; Author</th>
-                  <th className="pb-3 pr-4 font-medium">Shelf Call Number</th>
-                  <th className="pb-3 pr-4 font-medium">Date Issued</th>
-                  <th className="pb-3 pr-4 font-medium">Due Date</th>
-                  <th className="pb-3 text-right font-medium">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {MOCK_LOANS.map((loan, i) => (
-                  <tr
-                    key={loan.id}
-                    className={i !== MOCK_LOANS.length - 1 ? "border-b border-gray-50" : ""}
-                  >
-                    <td className="py-4 pr-4">
-                      <p className="font-semibold text-gray-900">{loan.title}</p>
-                      <p className="mt-0.5 text-xs text-gray-400">
-                        {loan.author} &bull; ISBN {loan.isbn}
-                      </p>
-                    </td>
-                    <td className="py-4 pr-4 text-gray-600">{loan.callNumber}</td>
-                    <td className="py-4 pr-4 text-gray-600">{loan.dateIssued}</td>
-                    <td className={`py-4 pr-4 font-medium ${loan.overdue ? "text-red-600" : "text-gray-700"}`}>
-                      {loan.dueDate}
-                    </td>
-                    <td className="py-4 text-right">
-                      {loan.overdue ? (
-                        <button
-                          disabled
-                          className="cursor-not-allowed rounded-md px-3 py-1.5 text-sm font-medium text-gray-300"
-                        >
-                          Extension Locked
-                        </button>
-                      ) : (
-                        <button className="rounded-md px-3 py-1.5 text-sm font-medium text-blue-600 hover:bg-blue-50">
-                          Request Extension
-                        </button>
-                      )}
-                    </td>
+            {loans === null && <p className="py-4 text-sm text-gray-500">Loading...</p>}
+            {loans !== null && activeLoans.length === 0 && (
+              <p className="py-4 text-sm text-gray-400">No active loans right now.</p>
+            )}
+            {activeLoans.length > 0 && (
+              <table className="w-full min-w-[720px] border-collapse text-left text-sm">
+                <thead>
+                  <tr className="border-b border-gray-100 text-xs uppercase tracking-wide text-gray-400">
+                    <th className="pb-3 pr-4 font-medium">Book Title &amp; Author</th>
+                    <th className="pb-3 pr-4 font-medium">Subject</th>
+                    <th className="pb-3 pr-4 font-medium">Date Issued</th>
+                    <th className="pb-3 pr-4 font-medium">Due Date</th>
+                    <th className="pb-3 text-right font-medium">Action</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {activeLoans.map((loan, i) => {
+                    const book = books[loan.book];
+                    const overdue = new Date(loan.due_date) < new Date();
+                    return (
+                      <tr
+                        key={loan.id}
+                        className={i !== activeLoans.length - 1 ? "border-b border-gray-50" : ""}
+                      >
+                        <td className="py-4 pr-4">
+                          <p className="font-semibold text-gray-900">{loan.book_title}</p>
+                          <p className="mt-0.5 text-xs text-gray-400">
+                            {book ? `${book.author} • ISBN ${book.isbn}` : "—"}
+                          </p>
+                        </td>
+                        <td className="py-4 pr-4 text-gray-600">{book?.subject || "—"}</td>
+                        <td className="py-4 pr-4 text-gray-600">{formatDate(loan.issue_date)}</td>
+                        <td className={`py-4 pr-4 font-medium ${overdue ? "text-red-600" : "text-gray-700"}`}>
+                          {formatDate(loan.due_date)}
+                        </td>
+                        <td className="py-4 text-right">
+                          {overdue ? (
+                            <button
+                              disabled
+                              className="cursor-not-allowed rounded-md px-3 py-1.5 text-sm font-medium text-gray-300"
+                            >
+                              Extension Locked
+                            </button>
+                          ) : (
+                            <button
+                              onClick={handleExtensionClick}
+                              className="rounded-md px-3 py-1.5 text-sm font-medium text-blue-600 hover:bg-blue-50"
+                            >
+                              Request Extension
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
-      </main>
-    </div>
+    </>
   );
 }

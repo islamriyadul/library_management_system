@@ -29,7 +29,7 @@ export default function Login() {
       <form className="auth-card" onSubmit={handleSubmit}>
         <h2>Library Login</h2>
         {error && <p className="error-text">{error}</p>}
-        <label>Username</label>
+        <label>Username or Email</label>
         <input
           value={username}
           onChange={(e) => setUsername(e.target.value)}

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import api from "../api/client";
+import { formatDate } from "../utils/formatDate";
 
 // NOTE: no Figma design exists for this page yet — plain functional layout.
 export default function AllLoans() {
@@ -14,7 +15,7 @@ export default function AllLoans() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#F8F9FA] p-8">
+    <>
       <h1 className="text-2xl font-bold text-gray-900">All Loans</h1>
       <p className="mt-1 text-sm text-gray-500">Every loan in the system, active and returned.</p>
 
@@ -40,8 +41,8 @@ export default function AllLoans() {
                   <tr key={l.id} className="border-b border-gray-50">
                     <td className="py-3 pr-4 font-medium text-gray-900">{l.book_title}</td>
                     <td className="py-3 pr-4 text-gray-600">{l.username}</td>
-                    <td className="py-3 pr-4 text-gray-600">{l.issue_date}</td>
-                    <td className={`py-3 pr-4 ${overdue ? "font-medium text-red-600" : "text-gray-600"}`}>{l.due_date}</td>
+                    <td className="py-3 pr-4 text-gray-600">{formatDate(l.issue_date)}</td>
+                    <td className={`py-3 pr-4 ${overdue ? "font-medium text-red-600" : "text-gray-600"}`}>{formatDate(l.due_date)}</td>
                     <td className="py-3 pr-4">
                       <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
                         l.is_returned ? "bg-gray-100 text-gray-500" : overdue ? "bg-red-50 text-red-600" : "bg-green-50 text-green-600"
@@ -49,7 +50,9 @@ export default function AllLoans() {
                         {l.is_returned ? "Returned" : overdue ? "Overdue" : "Active"}
                       </span>
                     </td>
-                    <td className="py-3 text-gray-600">{l.fine_amount} BDT</td>
+                    <td className={`py-3 ${l.current_fine > 0 ? "font-medium text-red-600" : "text-gray-600"}`}>
+                      {l.current_fine} BDT
+                    </td>
                   </tr>
                 );
               })}
@@ -57,6 +60,6 @@ export default function AllLoans() {
           </table>
         )}
       </div>
-    </div>
+    </>
   );
 }

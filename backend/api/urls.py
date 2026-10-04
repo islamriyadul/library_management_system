@@ -7,6 +7,8 @@ from .views import (
     MyLoansView, AllLoansView, issue_book, return_book,
     StaffListCreateView, toggle_staff_active,
     VerificationQueueView, create_verification_request, resolve_verification_request,
+    create_book_request, MyBookRequestsView, PendingBookRequestsView, resolve_book_request,
+    cancel_book_request, mark_fine_paid,
 )
 
 router = DefaultRouter()
@@ -24,6 +26,7 @@ urlpatterns = [
     path("loans/all/", AllLoansView.as_view(), name="all-loans"),
     path("loans/issue/", issue_book, name="issue-book"),
     path("loans/<int:loan_id>/return/", return_book, name="return-book"),
+    path("loans/<int:loan_id>/pay-fine/", mark_fine_paid, name="pay-fine"),
 
     # Staff management (Admin only)
     path("staff/", StaffListCreateView.as_view(), name="staff-list-create"),
@@ -33,6 +36,13 @@ urlpatterns = [
     path("verification/", VerificationQueueView.as_view(), name="verification-queue"),
     path("verification/create/", create_verification_request, name="verification-create"),
     path("verification/<int:request_id>/resolve/", resolve_verification_request, name="verification-resolve"),
+
+    # Student self-service book requests
+    path("book-requests/create/", create_book_request, name="book-request-create"),
+    path("book-requests/mine/", MyBookRequestsView.as_view(), name="book-request-mine"),
+    path("book-requests/pending/", PendingBookRequestsView.as_view(), name="book-request-pending"),
+    path("book-requests/<int:request_id>/resolve/", resolve_book_request, name="book-request-resolve"),
+    path("book-requests/<int:request_id>/cancel/", cancel_book_request, name="book-request-cancel"),
 ]
 
 urlpatterns += router.urls

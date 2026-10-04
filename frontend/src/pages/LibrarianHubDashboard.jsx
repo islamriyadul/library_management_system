@@ -200,45 +200,7 @@ export default function LibrarianHubDashboard() {
   const booksOverdueCount = loans ? overdueToday.length : "—";
 
   return (
-    <div className="flex min-h-screen bg-[#F8F9FA]">
-      {/* Sidebar */}
-      <aside className="flex w-64 shrink-0 flex-col justify-between border-r border-gray-100 bg-white px-4 py-6">
-        <div>
-          <div className="mb-8 flex items-center gap-3 px-2">
-            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-900 text-white">
-              <IconBook className="h-5 w-5" />
-            </span>
-            <div>
-              <p className="text-sm font-bold leading-tight text-gray-900">Central Library</p>
-              <p className="text-[11px] font-medium tracking-wide text-gray-400">LIBRARIAN PORTAL</p>
-            </div>
-          </div>
-
-          <nav className="flex flex-col gap-1">
-            {NAV_ITEMS.map((item) => (
-              <SidebarLink key={item.key} item={item} active={location.pathname === item.path} />
-            ))}
-            <button
-              onClick={handleLogout}
-              className="mt-2 flex w-full items-center gap-3 rounded-md border-l-4 border-transparent px-3 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-50"
-            >
-              <IconLogout className="h-5 w-5 text-gray-400" />
-              Log Out
-            </button>
-          </nav>
-        </div>
-
-        <div className="flex items-center gap-3 rounded-lg border border-gray-100 px-3 py-3">
-          <div className="h-9 w-9 shrink-0 overflow-hidden rounded-full bg-gray-200" />
-          <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-gray-900">{user?.username || "..."}</p>
-            <p className="truncate text-xs text-gray-400 capitalize">{user?.role || "Librarian"}</p>
-          </div>
-        </div>
-      </aside>
-
-      {/* Main canvas */}
-      <main className="flex-1 px-8 py-8">
+    <>
         {/* Header */}
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
@@ -433,7 +395,6 @@ export default function LibrarianHubDashboard() {
             </div>
           </div>
         </div>
-      </main>
-    </div>
+    </>
   );
 }
