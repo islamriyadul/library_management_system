@@ -14,9 +14,9 @@ export default function Reports() {
         const overdue = activeLoans.filter((l) => new Date(l.due_date) < new Date());
         const totalCopies = books.data.reduce((sum, b) => sum + b.total_copies, 0);
         const availableCopies = books.data.reduce((sum, b) => sum + b.available_copies, 0);
-        const totalFinesCollected = loans.data
-          .filter((l) => l.is_returned)
-          .reduce((sum, l) => sum + Number(l.fine_amount), 0);
+        // All money actually received towards fines (desk + online), including
+        // part-payments on books that are still out.
+        const totalFinesCollected = loans.data.reduce((sum, l) => sum + Number(l.fine_paid_amount || 0), 0);
 
         setData({
           totalTitles: books.data.length,

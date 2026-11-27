@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import api from "../api/client";
 import { useAuth } from "../api/AuthContext";
 
@@ -13,6 +14,20 @@ export default function Catalog() {
   const [requestingId, setRequestingId] = useState(null);
   const [cancellingId, setCancellingId] = useState(null);
   const [toast, setToast] = useState("");
+  // Library card state. Students can browse the catalog freely, but can only
+  // request a book once their card is approved AND the fee is paid.
+  // null = still loading (buttons stay disabled until we know).
+  const [card, setCard] = useState(null);
+  const isStudent = user?.role === "student";
+  const canRequest = card?.is_active === true;
+
+  const loadCard = () => {
+    if (!isStudent) return;
+    api
+      .get("/library-card/")
+      .then((res) => setCard(res.data))
+      .catch(() => setCard({ is_active: false, status: "none" }));
+  };
 
   const loadMyRequests = () => {
     if (user?.role !== "student") return;
@@ -45,6 +60,7 @@ export default function Catalog() {
   useEffect(() => {
     fetchBooks();
     loadMyRequests();
+    loadCard();
   }, []);
 
   const handleSearch = (e) => {
@@ -61,6 +77,7 @@ export default function Catalog() {
       loadMyRequests();
     } catch (err) {
       setToast(err.response?.data?.detail || "Couldn't send the request.");
+      if (err.response?.data?.code === "library_card_required") loadCard();
     } finally {
       setRequestingId(null);
     }
@@ -98,6 +115,24 @@ export default function Catalog() {
         />
         <button type="submit">Search</button>
       </form>
+
+      {isStudent && card && !card.is_active && (
+        <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+          <p className="font-semibold">You can browse the catalog, but you need a library card to request books.</p>
+          <p className="mt-1">
+            {card.status === "none" && "Register for your library card to get started."}
+            {card.status === "pending" && "Your application is waiting for librarian approval."}
+            {card.status === "approved" && "Your application is approved. Pay the card fee to activate your card."}
+            {card.status === "rejected" && "Your application was not approved. Please correct it and apply again."}{" "}
+            <Link
+              to={card.status === "approved" ? "/payments" : "/library-card"}
+              className="font-semibold text-blue-700 underline"
+            >
+              {card.status === "approved" ? "Go to Payments" : "Go to Library Card"}
+            </Link>
+          </p>
+        </div>
+      )}
 
       {loading && <p>Loading books...</p>}
       {errorMsg && <p className="error-text">{errorMsg}</p>}
@@ -166,11 +201,15 @@ export default function Catalog() {
                 </div>
               ) : (
                 <button
-                  disabled={book.available_copies < 1 || requestingId === book.id}
+                  disabled={!canRequest || book.available_copies < 1 || requestingId === book.id}
                   onClick={() => handleRequest(book.id)}
                   className="mt-2 w-full rounded-md bg-blue-900 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  {requestingId === book.id ? "Requesting..." : "Request to Borrow"}
+                  {requestingId === book.id
+                    ? "Requesting..."
+                    : canRequest
+                    ? "Request to Borrow"
+                    : "Library card required"}
                 </button>
               ))}
           </div>

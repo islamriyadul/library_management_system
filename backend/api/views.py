@@ -15,6 +15,7 @@ from .serializers import (
     BookRequestSerializer, UpdateMeSerializer,
 )
 from .permissions import IsLibrarianOrAdmin, IsLibrarianOrAdminOnly, IsAdminOnly, get_role
+from .cards import has_active_card
 
 
 # ---------- Auth ----------
@@ -237,10 +238,10 @@ def mark_fine_paid(request, loan_id):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        loan.fine_paid = True
-        loan.fine_paid_at = timezone.now()
-        loan.fine_paid_by = request.user
-        loan.save()
+        # The student pays the REMAINDER at the desk (anything they already
+        # paid online is credited), then the fine is fully settled.
+        remainder = max(0, loan.fine_amount - loan.fine_paid_amount)
+        loan.credit_fine(remainder, by=request.user)
 
     return Response(LoanSerializer(loan).data)
 
@@ -275,6 +276,12 @@ def toggle_staff_active(request, user_id):
     if get_role(target) not in ("librarian", "admin"):
         return Response(
             {"detail": "This endpoint only manages staff accounts."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    if target.id == request.user.id:
+        return Response(
+            {"detail": "You can't suspend your own account."},
             status=status.HTTP_400_BAD_REQUEST,
         )
 
@@ -356,6 +363,18 @@ def resolve_verification_request(request, request_id):
 @permission_classes([IsAuthenticated])
 def create_book_request(request):
     """A student clicks 'Request to Borrow' on a book in the Catalog."""
+    # Students can browse the catalog freely, but only a student whose library
+    # card is approved AND paid for may actually request a book.
+    if get_role(request.user) == "student" and not has_active_card(request.user):
+        return Response(
+            {
+                "detail": "You need an active library card to request books. "
+                          "Complete your card registration and pay the card fee first.",
+                "code": "library_card_required",
+            },
+            status=status.HTTP_403_FORBIDDEN,
+        )
+
     book_id = request.data.get("book")
     if not book_id:
         return Response({"detail": "book is required."}, status=status.HTTP_400_BAD_REQUEST)

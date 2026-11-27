@@ -21,7 +21,7 @@ export default function MyLoans() {
 
   const activeLoans = loans.filter((l) => !l.is_returned);
   const pastLoans = loans.filter((l) => l.is_returned);
-  const totalFines = loans.reduce((sum, l) => sum + (l.fine_amount || 0), 0);
+  const totalFines = loans.reduce((sum, l) => sum + Number(l.outstanding_fine || 0), 0);
 
   return (
     <div className="page">

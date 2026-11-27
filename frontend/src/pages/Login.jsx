@@ -18,7 +18,14 @@ export default function Login() {
       await login(username, password);
       navigate("/");
     } catch (err) {
-      setError("Invalid username or password.");
+      // Backend sends a specific message for suspended accounts; anything
+      // else (wrong password, network) gets the generic one.
+      const detail = err?.response?.data?.detail;
+      setError(
+        err?.response?.status === 401 && detail && !/no active account/i.test(detail)
+          ? detail
+          : "Invalid username or password."
+      );
     } finally {
       setSubmitting(false);
     }

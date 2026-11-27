@@ -19,6 +19,9 @@ import SystemSettings from "./pages/SystemSettings";
 import HomeRedirect from "./components/HomeRedirect";
 import Profile from "./pages/Profile";
 import MyFines from "./pages/MyFines";
+import LibraryCard from "./pages/LibraryCard";
+import Payments from "./pages/Payments";
+import CardApplications from "./pages/CardApplications";
 import "./App.css";
 
 function App() {
@@ -40,6 +43,24 @@ function App() {
             <Route path="/my-loans" element={<MyLoans />} />
             <Route path="/my-fines" element={<MyFines />} />
             <Route path="/profile" element={<Profile />} />
+
+            {/* Student only: library card registration + online payments */}
+            <Route
+              path="/library-card"
+              element={
+                <RequireRole roles={["student"]}>
+                  <LibraryCard />
+                </RequireRole>
+              }
+            />
+            <Route
+              path="/payments"
+              element={
+                <RequireRole roles={["student"]}>
+                  <Payments />
+                </RequireRole>
+              }
+            />
 
             {/* Librarian + Admin only */}
             <Route
@@ -87,6 +108,15 @@ function App() {
               element={
                 <RequireRole roles={["librarian", "admin"]}>
                   <BookRequests />
+                </RequireRole>
+              }
+            />
+
+            <Route
+              path="/card-applications"
+              element={
+                <RequireRole roles={["librarian", "admin"]}>
+                  <CardApplications />
                 </RequireRole>
               }
             />

@@ -136,6 +136,8 @@ class LoanSerializer(serializers.ModelSerializer):
     # current_fine is what's actually owed right now, live, whether the
     # loan has been returned yet or not — this is what the UI should show.
     current_fine = serializers.IntegerField(read_only=True)
+    # Unpaid amount only (0 once fine_paid) — sum THIS for a fine balance.
+    outstanding_fine = serializers.IntegerField(read_only=True)
     fine_paid_by_username = serializers.CharField(
         source="fine_paid_by.username", read_only=True, default=None
     )
@@ -145,12 +147,12 @@ class LoanSerializer(serializers.ModelSerializer):
         fields = [
             "id", "book", "book_title", "user", "username",
             "issue_date", "due_date", "return_date",
-            "fine_amount", "current_fine", "is_returned",
+            "fine_amount", "current_fine", "fine_paid_amount", "outstanding_fine", "is_returned",
             "fine_paid", "fine_paid_at", "fine_paid_by_username",
         ]
         read_only_fields = [
             "user", "issue_date", "due_date", "return_date",
-            "fine_amount", "current_fine", "is_returned",
+            "fine_amount", "current_fine", "fine_paid_amount", "outstanding_fine", "is_returned",
             "fine_paid", "fine_paid_at", "fine_paid_by_username",
         ]
 

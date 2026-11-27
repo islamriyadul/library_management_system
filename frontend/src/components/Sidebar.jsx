@@ -15,12 +15,17 @@ const IconGear = (p) => (<svg viewBox="0 0 24 24" fill="none" stroke="currentCol
 const IconInbox = (p) => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M22 12h-6l-2 3h-4l-2-3H2" /><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11Z" /></svg>);
 const IconLogout = (p) => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></svg>);
 
+const IconCard = (p) => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><rect x="2.5" y="5" width="19" height="14" rx="2" /><circle cx="8.5" cy="11" r="2" /><path d="M5.5 16c.5-1.7 1.7-2.5 3-2.5s2.5.8 3 2.5" /><line x1="14" y1="10" x2="19" y2="10" /><line x1="14" y1="14" x2="18" y2="14" /></svg>);
+const IconBank = (p) => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M3 10 12 4l9 6" /><line x1="5" y1="10" x2="19" y2="10" /><line x1="6" y1="13" x2="6" y2="18" /><line x1="10" y1="13" x2="10" y2="18" /><line x1="14" y1="13" x2="14" y2="18" /><line x1="18" y1="13" x2="18" y2="18" /><line x1="3" y1="20" x2="21" y2="20" /></svg>);
+
 const NAV_BY_ROLE = {
   student: [
     { label: "Dashboard", icon: IconGrid, path: "/" },
     { label: "Catalog", icon: IconCatalog, path: "/catalog" },
     { label: "My Loans", icon: IconBook, path: "/my-loans" },
     { label: "My Fines", icon: IconCircle, path: "/my-fines" },
+    { label: "Library Card", icon: IconCard, path: "/library-card" },
+    { label: "Payments", icon: IconBank, path: "/payments" },
   ],
   librarian: [
     { label: "Dashboard", icon: IconGrid, path: "/dashboard" },
@@ -30,6 +35,7 @@ const NAV_BY_ROLE = {
     { label: "All Loans", icon: IconBook, path: "/all-loans" },
     { label: "Fines", icon: IconCircle, path: "/librarian-fines" },
     { label: "Book Requests", icon: IconInbox, path: "/book-requests" },
+    { label: "Card Applications", icon: IconCard, path: "/card-applications" },
   ],
   admin: [
     { label: "Dashboard", icon: IconGrid, path: "/admin-dashboard" },
@@ -39,6 +45,7 @@ const NAV_BY_ROLE = {
     { label: "All Loans", icon: IconBook, path: "/all-loans" },
     { label: "Fines", icon: IconCircle, path: "/librarian-fines" },
     { label: "Book Requests", icon: IconInbox, path: "/book-requests" },
+    { label: "Card Applications", icon: IconCard, path: "/card-applications" },
     { label: "Manage Staff", icon: IconPeople, path: "/manage-staff" },
     { label: "Reports", icon: IconBar, path: "/reports" },
     { label: "System Settings", icon: IconGear, path: "/system-settings" },

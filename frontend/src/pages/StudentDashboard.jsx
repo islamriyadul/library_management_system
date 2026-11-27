@@ -162,8 +162,10 @@ export default function StudentDashboard() {
   // current_fine is the live owed amount — correct for both an active
   // overdue loan (grows daily) and a returned one (locked in). fine_amount
   // alone would understate this, since it stays 0 until a book is returned.
+  // outstanding_fine is 0 for fines already paid at the desk, so this only
+  // counts what the student still actually owes.
   const totalFines = loans
-    ? loans.reduce((sum, l) => sum + Number(l.current_fine || 0), 0)
+    ? loans.reduce((sum, l) => sum + Number(l.outstanding_fine || 0), 0)
     : 0;
 
   // Nearest upcoming due date among active loans (for the "Days Till Next

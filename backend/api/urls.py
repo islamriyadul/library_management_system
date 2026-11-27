@@ -1,6 +1,7 @@
 from django.urls import path
 from rest_framework.routers import DefaultRouter
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from rest_framework_simplejwt.views import TokenRefreshView
+from .login import ActiveAccountTokenObtainPairView
 
 from .views import (
     BookViewSet, RegisterView, MeView,
@@ -10,6 +11,10 @@ from .views import (
     create_book_request, MyBookRequestsView, PendingBookRequestsView, resolve_book_request,
     cancel_book_request, mark_fine_paid,
 )
+from .card_views import (
+    my_card, apply_for_card, download_card, list_applications, review_application,
+    payment_summary, start_payment, confirm_payment_view,
+)
 
 router = DefaultRouter()
 router.register(r"books", BookViewSet, basename="book")
@@ -17,7 +22,7 @@ router.register(r"books", BookViewSet, basename="book")
 urlpatterns = [
     # Auth
     path("auth/register/", RegisterView.as_view(), name="register"),
-    path("auth/login/", TokenObtainPairView.as_view(), name="login"),
+    path("auth/login/", ActiveAccountTokenObtainPairView.as_view(), name="login"),
     path("auth/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("auth/me/", MeView.as_view(), name="me"),
 
@@ -43,6 +48,18 @@ urlpatterns = [
     path("book-requests/pending/", PendingBookRequestsView.as_view(), name="book-request-pending"),
     path("book-requests/<int:request_id>/resolve/", resolve_book_request, name="book-request-resolve"),
     path("book-requests/<int:request_id>/cancel/", cancel_book_request, name="book-request-cancel"),
+
+    # Library card
+    path("library-card/", my_card, name="library-card"),
+    path("library-card/apply/", apply_for_card, name="library-card-apply"),
+    path("library-card/download/", download_card, name="library-card-download"),
+    path("library-card/applications/", list_applications, name="library-card-applications"),
+    path("library-card/applications/<int:application_id>/review/", review_application, name="library-card-review"),
+
+    # Online payments (bKash / Nagad)
+    path("payments/summary/", payment_summary, name="payment-summary"),
+    path("payments/create/", start_payment, name="payment-create"),
+    path("payments/<int:payment_id>/confirm/", confirm_payment_view, name="payment-confirm"),
 ]
 
 urlpatterns += router.urls
